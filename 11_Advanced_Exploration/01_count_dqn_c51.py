@@ -29,7 +29,7 @@ solve = 95
 init_replay = 5000
 
 
-class AdvancedReward(gym.RewardWrapper):
+class MountainCarReward(gym.RewardWrapper):
     def __init__(self, env):
         super().__init__(env=env)
         self.env = env
@@ -54,7 +54,7 @@ envs = []
 for _ in range(n_envs):
     env = gym.make(env_id)
     if wrap:
-        env = AdvancedReward(env)
+        env = MountainCarReward(env)
     env.seed(124)
     envs.append(env)
 

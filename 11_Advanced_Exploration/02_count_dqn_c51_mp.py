@@ -19,9 +19,9 @@ from datetime import datetime, timedelta
 
 wrap = False
 
-params = data.HYPERPARAMS['lander1']
+params = data.HYPERPARAMS['mountaincar']
 
-class AdvancedReward(gym.RewardWrapper):
+class MountainCarReward(gym.RewardWrapper):
     def __init__(self, env):
         super().__init__(env=env)
         self.env = env
@@ -119,7 +119,7 @@ if __name__=='__main__':
     for _ in range(params.n_envs):
         env = gym.make(params.env_id)
         if wrap:
-            env = AdvancedReward(env)
+            env = MountainCarReward(env)
         env.seed(params.seed)
         envs.append(env)
 
