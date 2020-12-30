@@ -112,7 +112,7 @@ def mp_c51_loss(net,states_v,actions_v,proj_dist_v):
 
 
 if __name__=='__main__':
-    mp.set_start_method('fork')
+    mp.set_start_method('spawn')
     os.environ['OMP_NUM_THREADS'] = "1"
 
     envs = []
