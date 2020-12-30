@@ -170,6 +170,7 @@ if __name__=='__main__':
             sa_values = distr_v[range(len(actions_v)), actions_v.data]
             log_sa_values = F.log_softmax(sa_values, dim=1)
             loss = -log_sa_values * proj_dist_v
+            loss = loss.sum(dim=1).mean()
             loss.backward()
             optimizer.step()
 
