@@ -9,7 +9,7 @@ import os
 import torch
 import gym
 import ptan
-from lib import model, hyperparameters
+from lib import model, data
 import numpy as np
 from tensorboardX import SummaryWriter
 from collections import Counter
@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 
 wrap = False
 
-params = hyperparameters.HYPERPARAMS['lander1']
+params = data.HYPERPARAMS['lander1']
 
 class AdvancedReward(gym.RewardWrapper):
     def __init__(self, env):
