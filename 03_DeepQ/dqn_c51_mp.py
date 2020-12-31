@@ -18,7 +18,7 @@ Another run using N_MP as multiplier (i.e. increase batch size):
 
 Notes:
 ------
-
+This was tested on MacBook-Pro
 """
 import torch
 import torch.multiprocessing as mp
