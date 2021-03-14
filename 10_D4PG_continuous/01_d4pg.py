@@ -51,18 +51,20 @@ if __name__ == '__main__':
     parser.add_argument('--write', action='store_true',
                         default=False, help='write to Tensorboard')
     parser.add_argument('--clip', type=float, help='clip grads')
+    parser.add_argument('--cuda', action='store_true', default=True, help='use cuda')
     args = parser.parse_args()
 
     params = data.HYPERPARAMS[args.env]
+    device = 'cuda' if args.cuda else 'cpu'
     if args.steps:
         params.steps = args.steps
 
     np.random.seed(params.seed)
     torch.manual_seed(params.seed)
 
-    act_net = model.ActorNet(params.obs_size, params.act_size, params.high_action)
+    act_net = model.ActorNet(params.obs_size, params.act_size, params.high_action).to(device)
     tgt_act_net = ptan.agent.TargetNet(act_net)
-    crt_net = model.CriticNet(params)
+    crt_net = model.CriticNet(params).to(device)
     tgt_crt_net = ptan.agent.TargetNet(crt_net)
     print("D4PG Actor Net", act_net)
     print("D4PG Crititc Net", crt_net)
@@ -73,7 +75,7 @@ if __name__ == '__main__':
         env.seed(params.seed)
         envs.append(env)
 
-    agent = model.DDPGAgent(act_net)
+    agent = model.DDPGAgent(act_net,device=device)
     exp_source = ptan.experience.ExperienceSourceFirstLast(envs, agent, params.gamma,steps_count=params.steps)
     buffer = ptan.experience.ExperienceReplayBuffer(exp_source, params.buffer_size)
 
@@ -125,21 +127,21 @@ if __name__ == '__main__':
 
         batch = buffer.sample(params.batch_size)
         s,a,r,d,l = utils.unpack_dqn_batch(batch)
-        states = torch.tensor(s)
-        actions = torch.tensor(a)
-        rewards = torch.tensor(r)
-        dones = torch.BoolTensor(d)
-        last_states = torch.tensor(l)
+        states = torch.tensor(s).to(device)
+        actions = torch.tensor(a).to(device)
+        rewards = torch.tensor(r).to(device)
+        dones = torch.BoolTensor(d).to(device)
+        last_states = torch.tensor(l).to(device)
 
         # Train Critic
         crt_optim.zero_grad()
         q_sa_dist = crt_net(states, actions)
         a_last = tgt_act_net.target_model(last_states)
         q_la_dist = tgt_crt_net.target_model(last_states, a_last)
-        q_la_prob = torch.softmax(q_la_dist, dim=1).data.numpy()
+        q_la_prob = torch.softmax(q_la_dist, dim=1).cpu().data.numpy()
         q_proj_prob = utils.calc_proj_dist(q_la_prob, r,d,params.vmin,
                                    params.vmax,params.natoms,dz,params.gamma)
-        q_proj_prob_v = torch.FloatTensor(q_proj_prob)
+        q_proj_prob_v = torch.FloatTensor(q_proj_prob).to(device)
         critic_loss = - torch.log_softmax(q_sa_dist, dim = 1) * q_proj_prob_v
         critic_loss = critic_loss.sum(dim=1).mean()
         critic_loss.backward()

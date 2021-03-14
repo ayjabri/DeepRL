@@ -64,19 +64,20 @@ class CriticNet(nn.Module):
 
 
 class DDPGAgent(BaseAgent):
-    def __init__(self, actor_net, epsilon=0.3, preprocessor=None, max_action=1, min_action=-1):
+    def __init__(self, actor_net, device ='cpu', epsilon=0.3, preprocessor=None, max_action=1, min_action=-1):
         self.epsilon = epsilon
         self.model = actor_net
         self.max_action = max_action
         self.min_action = min_action
+        self.device = device
         if preprocessor is None:
             self.preprocessor = float32_preprocessor
         else:
             self.preprocessor = preprocessor
 
     def __call__(self, states, agent_states=None):
-        states_v = self.preprocessor(states)
-        actions_ = self.model(states_v).data.numpy()
+        states_v = self.preprocessor(states).to(self.device)
+        actions_ = self.model(states_v).cpu().data.numpy()
         actions_ += np.random.normal(size=actions_.shape)
         actions_np = np.clip(actions_, self.min_action, self.max_action)
         return actions_np, agent_states

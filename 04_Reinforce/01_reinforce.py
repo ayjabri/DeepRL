@@ -50,16 +50,18 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()    
     parser.add_argument('--play', action='store_true', help='Play an episode after training is complete')
     parser.add_argument('--save',action='store_true', default=False, help='Store a copy of the network')
-    parser.add_argument('--env', default='freeway', help='Game name: cartpole, cartpole1, lander, freeway..etc')
+    parser.add_argument('--env', default='lander', help='Game name: cartpole, cartpole1, lander, freeway..etc')
     parser.add_argument('--episodes', type=int, help='train N episodes per batch')
+    parser.add_argument('--cuda', default=True, action='store_true', help='Use GPU')
     args = parser.parse_args()
     
     params = hyperparameters.HYPERPARAMS[args.env]
+    device = torch.device('cuda' if (args.cuda and torch.cuda.is_available()) else 'cpu')
     if args.episodes: params.steps = args.episodes
     env = gym.make(params.env_id)
-    net = model.RLNet(params.obs_size, params.act_size)
+    net = model.RLNet(params.obs_size, params.act_size).to(device)
     print(net)
-    agent = ptan.agent.PolicyAgent(net, apply_softmax=True, preprocessor=ptan.agent.float32_preprocessor)
+    agent = ptan.agent.PolicyAgent(net, apply_softmax=True, preprocessor=ptan.agent.float32_preprocessor,device=device)
     exp_source = ptan.experience.ExperienceSourceFirstLast(env, agent, params.gamma)
     generator = model.BatchGenerator(exp_source,params.steps,params)
     
@@ -86,7 +88,7 @@ if __name__=='__main__':
                 print('Solved in {} episodes within {}'.format(generator.episodes, timedelta(seconds=(datetime.now()-st).seconds)))
                 break
             optimizer.zero_grad()
-            loss_v = utils.calc_reinforce_loss(batch, net)
+            loss_v = utils.calc_reinforce_loss(batch, net, device)
             loss_v.backward()
             writer.add_scalar('loss', loss_v.item(),global_step=generator.frame,display_name=args.env)
             optimizer.step()
