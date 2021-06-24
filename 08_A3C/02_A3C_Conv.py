@@ -37,23 +37,18 @@ def play(env, agent):
 
 
 if __name__ == '__main__':
-    mp.set_start_method('spawn', force=True)
+    mp.set_start_method('forkserver', force=True)
     os.environ['OMP_NUM_THREADS'] = '1'
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--play', action='store_true',
-                        help='Play an episode after training is complete')
-    parser.add_argument('--save', action='store_true',
-                        default=False, help='Store a copy of the network')
-    parser.add_argument('--env', default='riverraid_conv',
-                        help='Game name: cartpole, cartpole500, lander, freeway..etc')
-    parser.add_argument('--episodes', type=int, default=4,
-                        help='train N episodes per batch')
-    parser.add_argument('--batch', action='store_true', default=False,
-                        help='Train using fixed batch sizes from params')
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--play', action='store_true',help='Play an episode after training is complete')
+    parser.add_argument('--cuda', action='store_true',help='Train on GPU if available')
+    parser.add_argument('--save', action='store_true',default=False, help='Store a copy of the network')
+    parser.add_argument('--env', default='riverraid_conv',help='Game name: cartpole, cartpole500, lander, freeway..etc')
+    parser.add_argument('--episodes', type=int, default=4,help='train N episodes per batch')
+    parser.add_argument('--batch', action='store_true', default=False,help='Train using fixed batch sizes from params')
     parser.add_argument('--steps', type=int, help='Gamma steps')
-    parser.add_argument('--write', action='store_true',
-                        default=False, help='write to Tensorboard')
+    parser.add_argument('--write', action='store_true',default=False, help='write to Tensorboard')
     parser.add_argument('--clip', type=float, help='clip grads')
     args = parser.parse_args()
 
@@ -62,14 +57,16 @@ if __name__ == '__main__':
         params.steps = args.steps
 
     ENTROPY_BETA = 0.02
+    device = 'cuda' if args.cuda else 'cpu'
     net = model.A2C_Conv(params.obs_size, params.act_size)
+    net.to(device)
     net.share_memory()
     print("Actor Crititc Net", net)
 
     exp_queue = mp.Queue(maxsize=params.n_mp)
     procs = []
     for _ in range(params.n_mp):
-        proc = mp.Process(target=utils.batch_data_fun,args=(net,exp_queue,params))
+        proc = mp.Process(target=utils.batch_data_fun,args=(net,exp_queue,params,device))
         proc.start()
         procs.append(proc)
 
@@ -111,8 +108,7 @@ if __name__ == '__main__':
             break
 
         optimizer.zero_grad()
-        value_loss, policy_loss, entropy_loss = utils.calc_a2c_losses(
-            batch, net, params)
+        value_loss, policy_loss, entropy_loss = utils.calc_a2c_losses(batch, net, params, device=device)
         loss = policy_loss + value_loss + entropy_loss
         loss.backward()
         if args.clip:

@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import ptan
 import numpy as np
 from types import SimpleNamespace
+from collections import deque, namedtuple
 
 
 class PGNet(nn.Module):
@@ -28,18 +29,101 @@ class PGNet(nn.Module):
         return self.output(y)
 
 
+class RNNPG(nn.Module):
+    r"""Recurrent plain vanila policy gradient model."""
+
+    def __init__(self, obs_size, act_size, sequence=5, hid_size=128, num_layers=2):
+        super().__init__()
+        self.sequence = sequence
+
+        self.gru = nn.GRU(obs_size, hid_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hid_size*sequence, act_size)
+
+    @staticmethod
+    def pad_sequence(states, episode_end=False, sequence=5, padding_value=0.0):
+        r"""Pad a sequence of observations upto sequence size by adding `padding_value` above or below the input.
+
+        It pads above states by default. if episode end is `True` it pads after (see example).
+
+        Args:
+            states: tensor of size (batch, sequence_0, features)
+
+            episode_end: bool   
+
+            sequence = 5: int. desired sequence size    
+
+            padding_value = 0.0: float. value to pad tensor with     
+
+        Example:
+            >>> a = a = torch.ones(1,2,4)
+            >>> print(a) 
+            tensor([[[1., 1., 1., 1.],
+                 [1., 1., 1., 1.]]])
+            >>> a = pad_sequence(a,episode_end=False, sequence=5)
+            >>> print(a)
+            tensor([[[0., 0., 0., 0.],
+                     [0., 0., 0., 0.],
+                     [0., 0., 0., 0.],
+                     [1., 1., 1., 1.],
+                     [1., 1., 1., 1.]]])
+        """
+        # assuming batch is always first
+        out_dims = (len(states), sequence, states.size(2))
+        out_tensor = states[0].data.new(*out_dims).fill_(padding_value)
+        length = states.size(1)
+        if episode_end:
+            out_tensor[:, :length, :] = states
+        else:
+            out_tensor[:, -length:, :] = states
+        return out_tensor
+
+    def forward(self, x, hx=None, episode_end=False):
+        r"""Return output and pad the input if observation is less than sequence."""
+        if x.size(1) < self.sequence:
+            x = self.pad_sequence(x, episode_end, self.sequence)
+        out, hx = self.gru(x, hx)
+        out = F.relu(out.flatten(1))
+        return self.fc(out), hx
+
+
+class RNNAgent(ptan.agent.BaseAgent):
+    def __init__(self, model, actions, device='cpu', apply_softmax=True):
+        self.model = model
+        self.device = device
+        self.actions = actions
+        self.apply_softmax = apply_softmax
+        self.reset()
+
+    def reset(self):
+        self.hidden_state = None
+        pass
+    
+    @torch.no_grad()
+    def __call__(self, state, episode_end=False):
+        if isinstance(state, np.ndarray):
+            state = torch.FloatTensor([state]).to(self.device)
+        if len(state.shape) < 3:
+            state.unsqueeze_(0)
+        out, self.hidden_state = self.model(
+            state, self.hidden_state, episode_end)
+        if self.apply_softmax == True:
+            out = torch.softmax(out, dim=1)
+        out = out.data.cpu().numpy()
+        actions = np.random.choice(self.actions, size=len(out))
+        return actions, self.hidden_state
+
+
 class BatchGenerator(object):
     r"""
     Summary: generate batchs from environment.
 
     Parameters
     ----------
-    exp_source : ptan.experience
-         .
-    train_episodes : int, optional
-         . The default is None.
-    params : SimpleNamespace, optional
-         . The default is None.
+    `exp_source` : ptan.experience   
+
+    `train_episodes` : int, optional. Default is None.   
+
+    `params` : SimpleNamespace, optional. Default is None.    
 
     Returns
     -------

@@ -65,19 +65,13 @@ def play(env, agent):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--play', action='store_true',
-                        help='Play an episode after training is complete')
-    parser.add_argument('--save', action='store_true',
-                        default=False, help='Store a copy of the network')
-    parser.add_argument('--env', default='cartpole',
-                        help='Game name: cartpole, cartpole1, lander, freeway..etc')
-    parser.add_argument('--episodes', type=int, default=4,
-                        help='train N episodes per batch')
-    parser.add_argument('--batch', action='store_true', default=False,
-                        help='Train using fixed batch sizes from params')
+    parser.add_argument('--play', action='store_true',help='Play an episode after training is complete')
+    parser.add_argument('--save', action='store_true',default=False, help='Store a copy of the network')
+    parser.add_argument('--env', default='cartpole',help='Game name: cartpole, cartpole1, lander, freeway..etc')
+    parser.add_argument('--episodes', type=int, default=4,help='train N episodes per batch')
+    parser.add_argument('--batch', action='store_true', default=False,help='Train using fixed batch sizes from params')
     parser.add_argument('--steps', type=int, help='Gamma steps')
-    parser.add_argument('--write', action='store_true',
-                        default=False, help='write to Tensorboard')
+    parser.add_argument('--write', action='store_true',default=False, help='write to Tensorboard')
     parser.add_argument('--clip', type=float, help='clip grads')
     args = parser.parse_args()
 

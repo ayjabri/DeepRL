@@ -69,9 +69,9 @@ class A2C_Conv(nn.Module):
         super().__init__()
         self.input_shape = input_shape
         self.act_size = act_size
-        self.conv1 = nn.Conv2d(input_shape[0], 32, 8, stride=4)
-        self.conv2 = nn.Conv2d(32, 64, 4, stride =2)
-        self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
+        self.conv1 = nn.Conv2d(input_shape[0], 32, 5, stride=1, padding=2)
+        self.conv2 = nn.Conv2d(32, 64, 3, stride =1, padding=1)
+        self.conv3 = nn.Conv2d(64, 64, 3, stride=1, padding=1)
         self._calc_conv_out()
         self.p1 = nn.Linear(self._conv_out_size, 512)
         self.policy = nn.Linear(512, act_size)
@@ -79,10 +79,9 @@ class A2C_Conv(nn.Module):
         self.value = nn.Linear(512, 1)
 
     def forward(self,x):
-        x = x.float()
-        x /= 256
-        y = ptan.agent.float32_preprocessor(x)
-        y = F.relu(self.conv1(y))
+        fx = x.float()/255
+        # y = ptan.agent.float32_preprocessor(x)
+        y = F.relu(self.conv1(fx))
         y = F.relu(self.conv2(y))
         y = F.relu(self.conv3(y))
         y = torch.flatten(y, start_dim=1, end_dim=-1)

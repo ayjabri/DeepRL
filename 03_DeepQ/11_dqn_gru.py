@@ -35,7 +35,7 @@ class DRQN(nn.Module):
 
         self.to(device)
 
-    def forward(self, x, h):
+    def forward(self, x, h=None):
         fx= x.unsqueeze(1)
         self.gru.flatten_parameters()
         out, h = self.gru(fx,h)
@@ -107,7 +107,8 @@ if __name__ == '__main__':
     parser.add_argument('--env', default='cartpole1',help='name of the game: lander, cartpole, freeway')
     args = parser.parse_args()
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device='cpu'
     params = hyperparameters.HYPERPARAMS[args.env]
     params.LR = 1e-3
     env = gym.make(params.ENV_ID)
@@ -115,7 +116,7 @@ if __name__ == '__main__':
     actions = env.action_space.n
 
     # User Deep Recurrent Q-Learning network
-    net = DRQN(shape, actions, device =device)
+    net = DRQN(shape, actions, hidden_size=128, num_layers=1, device =device)
 
     net_type = 'DRQN'
     print(net)
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     selector = ptan.actions.EpsilonGreedyActionSelector()
     eps_tracker = ptan.actions.EpsilonTracker(selector, params.EPS_START, params.EPS_END,
                                               params.EPS_FRAMES)
-    agent = ptan.agent.DQNAgent(lambda x: net(x, net.init_hidden(1))[0], selector,
+    agent = ptan.agent.DQNAgent(lambda x: net(x, None)[0], selector,
                                 device=device, preprocessor=ptan.agent.float32_preprocessor)
     exp_source = ptan.experience.ExperienceSourceFirstLast(env, agent, params.GAMMA,
                                                            steps_count=1)
@@ -158,7 +159,7 @@ if __name__ == '__main__':
                             seconds=(datetime.now()-st).seconds)
                         print(f'Solved in {duration}')
                         if args.save:
-                            f_name = ''.join(env.spec.id,'_',net_type,'.dat')
+                            f_name = ''.join([env.spec.id,'_',net_type,'.dat'])
                             torch.save(net.state_dict(), f_name)
                         if args.play:
                             play(env, agent)

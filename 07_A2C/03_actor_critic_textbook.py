@@ -123,7 +123,7 @@ if __name__ == '__main__':
     PLAY_EPISODES = 8
     SEED = 120
 
-    device = ('cuda' if torch.cuda.is_available() else 'cpu')
+    device = 'cpu' #('cuda' if torch.cuda.is_available() else 'cpu')
     float32 = ptan.agent.float32_preprocessor
 
     envs = []
