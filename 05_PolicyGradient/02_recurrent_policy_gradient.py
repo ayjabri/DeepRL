@@ -21,8 +21,9 @@ import torch.nn.functional as F
 from datetime import datetime, timedelta
 
 
-Experience = namedtuple(
-    'Experience', ['state', 'action', 'reward', 'done', 'last_state'])
+# Experience = namedtuple(
+#     'Experience', ['state', 'action', 'reward', 'done', 'last_state'])
+Experience = namedtuple('Experience',['state','action','reward'])
 
 
 def preprocess(x):
@@ -65,7 +66,7 @@ def stack_batch(states, sequence):
 
 @torch.no_grad()
 def play(env, agent):
-    """Play an episode using trained agent."""
+    r"""Play an episode using trained agent."""
     state = env.reset()
     try:
         agent.reset()
@@ -127,7 +128,7 @@ if __name__ == '__main__':
             action,_ = agent(state, done)
             last_state, reward, done, _ = env.step(action.item())
             episode_rewards += reward
-            batch.append(Experience(state, action.item(), reward, done, last_state))
+            batch.append(Experience(state, action.item(), reward)) #, done, last_state))
             state = last_state
             if done:
                 total_rewards.append(episode_rewards)
@@ -152,7 +153,8 @@ if __name__ == '__main__':
             break
 
         ### training ###
-        states, actions, rewards, dones, last_states = list(zip(*batch))
+        # states, actions, rewards, dones, last_states = list(zip(*batch))
+        states, actions, rewards = list(zip(*batch))
         dis_rewards = discount_rewards(rewards, GAMMA)
         states = np.array(states, copy=False, dtype=np.float32)
         states_v = stack_batch(states, SEQ) if args.rnn else torch.FloatTensor(states)
@@ -175,6 +177,7 @@ if __name__ == '__main__':
         #total loss
         loss = policy_loss + entropy_loss
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 0.1)
         optimizer.step()
 
         # clear the batch for next episode
