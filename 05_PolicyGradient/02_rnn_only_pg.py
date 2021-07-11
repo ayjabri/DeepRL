@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Plain vanilla recurrent policy gradient
+Plain vanilla recurrent policy gradient using RNN without dense layer
 
-Created on Thu Jun 24 08:38:05 2021
+Created on Fri Jun 25 14:53:20 2021
 
-@author: ayman.aljabri@gmail.com
-
+@author: ayman
 """
 
 import gym
@@ -19,10 +18,9 @@ from time import time
 from collections import namedtuple
 import torch.nn.functional as F
 from datetime import datetime, timedelta
+from torchsummary import summary
 
 
-# Experience = namedtuple(
-#     'Experience', ['state', 'action', 'reward', 'done', 'last_state'])
 Experience = namedtuple('Experience',['state','action','reward'])
 
 
@@ -79,7 +77,7 @@ def play(env, agent):
         env.render()
         # state_v = torch.FloatTensor([state])
         action = agent(state)[0]
-        state, r, done, _ = env.step(action.item())
+        state, r, done, _ = env.step(action)
         rewards += r
         if done:
             print(rewards)
@@ -88,29 +86,29 @@ def play(env, agent):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--rnn', action='store_true', help='Use Recurrent Neural Network')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--rnn', action='store_true', help='Use Recurrent Neural Network')
+    # args = parser.parse_args()
     
     ENTROPY_BETA = 0.02
-    SEQ = 1
+    SEQ = 4
     GAMMA = 0.96
     HID_SIZE = 32
     NUM_LAYERS = 2
     SOLVE = 195
-    LR = 1e-2
+    LR = 1e-3
 
     env = gym.make('CartPole-v0')
     obs_size = env.observation_space.shape[0]
     act_size = env.action_space.n
-    if args.rnn:
-        net = model.RNNPG(obs_size, act_size, SEQ, HID_SIZE, NUM_LAYERS)
-        agent = model.RNNAgent(net, act_size)
-    else:
-        net = model.PGNet(obs_size, act_size, HID_SIZE)
-        agent = ptan.agent.PolicyAgent(net,apply_softmax=True,preprocessor=preprocess)
-    print(net)
+    
+    
+    net = model.RNNPGII(obs_size, act_size)
+    agent = model.RNNAgentII(net, act_size)
 
+    print(net)
+    # print(summary(net, (obs_size,), device='cpu'))
+    
     optimizer = torch.optim.Adam(net.parameters(), lr=LR)
 
     total_rewards = []
@@ -124,19 +122,20 @@ if __name__ == '__main__':
     mean = None
     done = False
     batch = []
-    loss = torch.tensor([])
+    hx = None
     while True:
         while True:
             frame += 1
             action, _ = agent(state, done)
-            last_state, reward, done, _ = env.step(action.item())
+            action = action.item()
+            last_state, reward, done, _ = env.step(action)
             episode_rewards += reward
-            batch.append(Experience(state, action.item(), reward)) 
+            batch.append(Experience(state, action, reward)) 
             state = last_state
             if done:
                 total_rewards.append(episode_rewards)
                 episode_rewards = 0
-                if args.rnn: agent.reset()
+                agent.reset()
                 state = env.reset()
                 episode += 1
                 done = False
@@ -147,7 +146,7 @@ if __name__ == '__main__':
             speed = (frame - prev_frame)/(time()-print_time)
             prev_frame = frame
             print(
-                f"{frame:,}: done {episode} episodes, mean reward {mean_reward:6.3f}, total_loss:{loss.item():.3f}", flush=True)
+                f"{frame:,}: done {episode} episodes, mean reward {mean_reward:6.3f}", flush=True)
             print_time = time()
 
         if mean_reward > SOLVE:
@@ -159,27 +158,30 @@ if __name__ == '__main__':
         states, actions, rewards = list(zip(*batch))
         dis_rewards = discount_rewards(rewards, GAMMA)
         states = np.array(states, copy=False, dtype=np.float32)
-        states_v = stack_batch(states, SEQ) if args.rnn else torch.FloatTensor(states)
+        states_v = torch.FloatTensor(states)
         batch_scale_v = torch.FloatTensor(dis_rewards)
         optimizer.zero_grad()
-
+    
         # policy loss
-        logits_v = net(states_v)[0] if args.rnn else net(states_v)
-        log_prob_v = F.log_softmax(logits_v, dim=1)
+        logits_v, hx = net(states_v.unsqueeze(0))
+        # hx = hx.data.cpu()
+        # logits_v = net(states_v.unsqueeze(1))[0]
+        log_prob_v = F.log_softmax(logits_v, dim=2)[0]
+        # log_prob_v = F.log_softmax(logits_v, dim=2)[:,-1,:]
         # Gather probabilities with taken actions
         log_prob_action_v = batch_scale_v * \
             log_prob_v[range(len(actions)), actions]
         policy_loss = - log_prob_action_v.mean()
 
         # entropy loss
-        probs_v = F.softmax(logits_v, dim=1)
+        probs_v = F.softmax(logits_v, dim=2)[0]
         entropy = - (probs_v * log_prob_v).sum(dim=1).mean()
         entropy_loss = - ENTROPY_BETA * entropy
         
         #total loss
         loss = policy_loss + entropy_loss
         loss.backward()
-        # torch.nn.utils.clip_grad_norm_(net.parameters(), 0.1)
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 0.1)
         optimizer.step()
 
         # clear the batch for next episode

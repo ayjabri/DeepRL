@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import ptan
 import numpy as np
 from types import SimpleNamespace
-from collections import deque, namedtuple
+# from collections import deque, namedtuple
 
 
 class PGNet(nn.Module):
@@ -20,7 +20,8 @@ class PGNet(nn.Module):
 
     def __init__(self, obs_size, act_size, hid_size=128):
         super().__init__()
-        self.fc1 = nn.Linear(obs_size, hid_size)
+        # self.fc1 = nn.Linear(obs_size, hid_size)
+        self.fc1 = nn.GRUCell(obs_size, hid_size)
         self.output = nn.Linear(hid_size, act_size, bias=True)
 
     def forward(self, x):
@@ -59,8 +60,7 @@ class RNNPG(nn.Module):
             >>> print(a) 
             tensor([[[1., 1., 1., 1.],
                  [1., 1., 1., 1.]]])
-            >>> a = pad_sequence(a,episode_end=False, sequence=5)
-            >>> print(a)
+            >>> pad_sequence(a,episode_end=False, sequence=5)
             tensor([[[0., 0., 0., 0.],
                      [0., 0., 0., 0.],
                      [0., 0., 0., 0.],
@@ -86,6 +86,46 @@ class RNNPG(nn.Module):
         return self.fc(out), hx
 
 
+class RNNPGII(nn.Module):
+    r"""Recurrent plain vanila policy gradient model."""
+
+    def __init__(self, obs_size, act_size, sequence=5, num_layers=2):
+        super().__init__()
+        self.sequence = sequence
+        self.gru = nn.GRU(obs_size, act_size, num_layers, batch_first=True)
+
+    def forward(self, x, hx=None, episode_end=False):
+        r"""Return output and pad the input if observation is less than sequence."""
+        out, hx = self.gru(x, hx)
+        return out, hx
+
+
+class GRUPG(nn.Module):
+    r"""GRU plain vanila policy gradient model."""
+
+    def __init__(self, obs_size, act_size, hid_size=128, num_layers=2):
+        super().__init__()
+        self.hid_size = hid_size
+        self.num_layers = num_layers
+        
+        self.input = nn.Linear(obs_size, 32)
+        self.gru = nn.GRU(32, hid_size, num_layers, batch_first=True)
+        self.output = nn.Linear(hid_size, act_size)
+
+    def forward(self, x, hx=None):
+        r"""Return output and pad the input if observation is less than sequence."""
+        batch_size = x.size(0)
+        y = self.input(x)
+        y = y.view(batch_size, 1, -1)
+        if hx is None:
+            hx = torch.zeros((self.num_layers, x.size(0), self.hid_size))
+            y, hx = self.gru(y, hx)
+        else:
+            y, hx = self.gru(y, hx)
+        y = self.output(F.relu(y.flatten(1)))
+        return y, hx
+
+
 class RNNAgent(ptan.agent.BaseAgent):
     def __init__(self, model, actions, device='cpu', apply_softmax=True):
         self.model = model
@@ -95,22 +135,75 @@ class RNNAgent(ptan.agent.BaseAgent):
         self.reset()
 
     def reset(self):
-        self.hidden_state = None
+        self.hx = None
         pass
-    
+
     @torch.no_grad()
     def __call__(self, state, episode_end=False):
         if isinstance(state, np.ndarray):
             state = torch.FloatTensor([state]).to(self.device)
         if len(state.shape) < 3:
             state.unsqueeze_(0)
-        out, self.hidden_state = self.model(
-            state, self.hidden_state, episode_end)
+        out, self.hx = self.model(state, self.hx, episode_end)
+        if self.apply_softmax == True:
+            out = torch.softmax(out, dim=1)
+        out = out.data.cpu().numpy()[0]
+        actions = np.random.choice(self.actions, p=out)
+        return np.array(actions), self.hx
+
+
+class RNNAgentII(ptan.agent.BaseAgent):
+    def __init__(self, model, actions, device='cpu', apply_softmax=True):
+        self.model = model
+        self.device = device
+        self.actions = actions
+        self.apply_softmax = apply_softmax
+        self.reset()
+
+    def reset(self):
+        self.hx = None
+        pass
+
+    @torch.no_grad()
+    def __call__(self, state, episode_end=False):
+        if isinstance(state, np.ndarray):
+            state = torch.FloatTensor([state]).to(self.device)
+        if len(state.shape) < 3:
+            state.unsqueeze_(0)
+        out, self.hx = self.model(state, self.hx, episode_end)
+        if self.apply_softmax == True:
+            out = torch.softmax(out, dim=2)
+        out = out.data.cpu().numpy()[-1, -1, :]
+        actions = np.random.choice(self.actions, p=out)
+        return np.array(actions), self.hx
+
+
+class GRUAgent(ptan.agent.BaseAgent):
+    r"""Do NOT use to collect observations. Incomplete agent, use to play only!"""
+    def __init__(self, model, selector=ptan.actions.ArgmaxActionSelector(), device='cpu', apply_softmax=True):
+        self.model = model
+        self.selector = selector
+        self.device = device
+        self.apply_softmax = apply_softmax
+        self.reset()
+
+    def reset(self):
+        self.hx = None
+        pass
+
+    @torch.no_grad()
+    def __call__(self, state, hx=None):
+        if isinstance(state, np.ndarray):
+            state = torch.FloatTensor([state]).to(self.device)
+        # if len(state.shape) < 3:
+        #     state.unsqueeze_(1)
+        # out, self.hx = self.model(state, hx)
+        out = self.model(state)
         if self.apply_softmax == True:
             out = torch.softmax(out, dim=1)
         out = out.data.cpu().numpy()
-        actions = np.random.choice(self.actions, size=len(out))
-        return actions, self.hidden_state
+        actions = self.selector(out)
+        return np.array(actions), hx
 
 
 class BatchGenerator(object):
