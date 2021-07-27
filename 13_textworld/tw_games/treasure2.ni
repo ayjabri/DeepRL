@@ -15,90 +15,99 @@ food is edible.
 A room has a text called internal name.
 
 
-The r_3 and the r_2 and the r_0 and the r_1 and the r_4 are rooms.
+The r_1 and the r_0 and the r_2 and the r_3 and the r_4 are rooms.
 
-The internal name of r_3 is "attic".
-The printed name of r_3 is "-= Attic =-".
-The attic part 0 is some text that varies. The attic part 0 is "You've entered an attic.
-
-
-
-There is an unguarded exit to the south. There is an unblocked exit to the west.".
-The description of r_3 is "[attic part 0]".
-
-The r_2 is mapped west of r_3.
-The r_4 is mapped south of r_3.
-The internal name of r_2 is "scullery".
-The printed name of r_2 is "-= Scullery =-".
-The scullery part 0 is some text that varies. The scullery part 0 is "You arrive in a scullery. A typical one.
+Understand "scullery" as r_1.
+The internal name of r_1 is "scullery".
+The printed name of r_1 is "-= Scullery =-".
+The scullery part 0 is some text that varies. The scullery part 0 is "Of every scullery you could have sauntered into, you had to show up in an usual one.
 
 
 
-There is an exit to the east. Don't worry, it is unblocked. There is an exit to the south. Don't worry, it is unguarded.".
-The description of r_2 is "[scullery part 0]".
+You don't like doors? Why not try going north, that entranceway is unguarded. You don't like doors? Why not try going west, that entranceway is unblocked.".
+The description of r_1 is "[scullery part 0]".
 
-The r_1 is mapped south of r_2.
-The r_3 is mapped east of r_2.
-The internal name of r_0 is "pantry".
-The printed name of r_0 is "-= Pantry =-".
-The pantry part 0 is some text that varies. The pantry part 0 is "You are in a pantry. A typical kind of place.
-
-
-
-You don't like doors? Why not try going north, that entranceway is unblocked.".
-The description of r_0 is "[pantry part 0]".
-
-The r_1 is mapped north of r_0.
-The internal name of r_1 is "bedchamber".
-The printed name of r_1 is "-= Bedchamber =-".
-The bedchamber part 0 is some text that varies. The bedchamber part 0 is "Well, here we are in a bedchamber.
-
-
-
-There is an unguarded exit to the north. There is an unguarded exit to the south.".
-The description of r_1 is "[bedchamber part 0]".
-
-The r_0 is mapped south of r_1.
+The r_0 is mapped west of r_1.
 The r_2 is mapped north of r_1.
-The internal name of r_4 is "vault".
-The printed name of r_4 is "-= Vault =-".
-The vault part 0 is some text that varies. The vault part 0 is "You are in a vault. A standard kind of place. The room is well lit.
+Understand "playroom" as r_0.
+The internal name of r_0 is "playroom".
+The printed name of r_0 is "-= Playroom =-".
+The playroom part 0 is some text that varies. The playroom part 0 is "You arrive in a playroom. A normal kind of place. You begin to take stock of what's in the room.
 
 
 
-There is an exit to the north. Don't worry, it is unblocked.".
-The description of r_4 is "[vault part 0]".
+There is an exit to the east. Don't worry, it is unblocked.".
+The description of r_0 is "[playroom part 0]".
 
-The r_3 is mapped north of r_4.
-
-The o_0 and the o_1 are object-likes.
-The o_0 and the o_1 are privately-named.
-The r_3 and the r_2 and the r_0 and the r_1 and the r_4 are rooms.
-The r_3 and the r_2 and the r_0 and the r_1 and the r_4 are privately-named.
-
-The description of o_0 is "The lampshade is well-used.".
-The printed name of o_0 is "lampshade".
-Understand "lampshade" as o_0.
-The o_0 is in r_4.
-The description of o_1 is "The shoe seems to fit in here".
-The printed name of o_1 is "shoe".
-Understand "shoe" as o_1.
-The o_1 is in r_4.
+The r_1 is mapped east of r_0.
+Understand "bedchamber" as r_2.
+The internal name of r_2 is "bedchamber".
+The printed name of r_2 is "-= Bedchamber =-".
+The bedchamber part 0 is some text that varies. The bedchamber part 0 is "You've entered a bedchamber.
 
 
-The player is in r_0.
+
+There is an unblocked exit to the south. There is an unblocked exit to the west.".
+The description of r_2 is "[bedchamber part 0]".
+
+The r_3 is mapped west of r_2.
+The r_1 is mapped south of r_2.
+Understand "vault" as r_3.
+The internal name of r_3 is "vault".
+The printed name of r_3 is "-= Vault =-".
+The vault part 0 is some text that varies. The vault part 0 is "You arrive in a vault. A typical kind of place. Okay, just remember what you're here to do, and everything will go great.
+
+
+
+You need an unblocked exit? You should try going east. There is an unguarded exit to the north.".
+The description of r_3 is "[vault part 0]".
+
+The r_4 is mapped north of r_3.
+The r_2 is mapped east of r_3.
+Understand "study" as r_4.
+The internal name of r_4 is "study".
+The printed name of r_4 is "-= Study =-".
+The study part 0 is some text that varies. The study part 0 is "You're not going to believe this, but you've just entered a study.
+
+
+
+You need an unblocked exit? You should try going south.".
+The description of r_4 is "[study part 0]".
+
+The r_3 is mapped south of r_4.
+
+The f_0 are foods.
+The f_0 are privately-named.
+The o_0 are object-likes.
+The o_0 are privately-named.
+The r_1 and the r_0 and the r_2 and the r_3 and the r_4 are rooms.
+The r_1 and the r_0 and the r_2 and the r_3 and the r_4 are privately-named.
+
+The description of f_0 is "The chocolate bar looks inviting.".
+The printed name of f_0 is "chocolate bar".
+Understand "chocolate bar" as f_0.
+Understand "chocolate" as f_0.
+Understand "bar" as f_0.
+The f_0 is in r_2.
+The description of o_0 is "The poem would seem to be well matched to everything else here".
+The printed name of o_0 is "poem".
+Understand "poem" as o_0.
+The o_0 is in r_0.
+
+
+The player is in r_4.
 
 The quest0 completed is a truth state that varies.
 The quest0 completed is usually false.
 
-Test quest0_0 with "go north / go north / go east / go south / take lampshade"
+Test quest0_0 with "go south / go east / go south / go west / take poem"
 
 Every turn:
 	if quest0 completed is true:
 		do nothing;
-	else if The player carries the o_1:
+	else if The player carries the f_0:
 		end the story; [Lost]
-	else if The player is in r_4 and The player carries the o_0:
+	else if The player is in r_0 and The player carries the o_0:
 		increase the score by 1; [Quest completed]
 		Now the quest0 completed is true;
 
@@ -193,8 +202,15 @@ Rule for printing the content of the world:
 
 Printing the content of the inventory is an activity.
 Rule for printing the content of the inventory:
-	say "Inventory:[line break]";
-	list the contents of the player, with newlines, indented, giving inventory information, including all contents, with extra indentation.
+	say "You are carrying: ";
+	list the contents of the player, as a sentence, giving inventory information, including all contents;
+	say ".".
+
+The print standard inventory rule is not listed in any rulebook.
+Carry out taking inventory (this is the new print inventory rule):
+	say "You are carrying: ";
+	list the contents of the player, as a sentence, giving inventory information, including all contents;
+	say ".".
 
 Printing the content of nowhere is an activity.
 Rule for printing the content of nowhere:
@@ -260,8 +276,8 @@ The last property-aggregation rule (this is the print aggregated properties rule
 		rule succeeds;
 	rule fails;
 
-The objective part 0 is some text that varies. The objective part 0 is "I hope you're ready to go into rooms and interact with objects, because you've just entered TextWorld! Here is your task for today. First thing I need you to do is to make an effort to travel north. A".
-The objective part 1 is some text that varies. The objective part 1 is "nd then, venture north. And then, venture east. That done, try to head south. Then, lift the lampshade from the floor of the vault. And if you do that, you're the winner!".
+The objective part 0 is some text that varies. The objective part 0 is "Hey, thanks for coming over to the TextWorld today, there is something I need you to do for me. First of all, you could, like, go south. And then, try to venture east. With that over with, take a trip".
+The objective part 1 is some text that varies. The objective part 1 is " south. And then, attempt to venture west. If you can do that, retrieve the poem from the floor of the playroom. Alright, thanks!".
 
 An objective is some text that varies. The objective is "[objective part 0][objective part 1]".
 Printing the objective is an action applying to nothing.
@@ -332,6 +348,8 @@ Every turn:
 		say "</inventory>";
 	if extra score command option is true:
 		say "<score>[line break][score][line break]</score>";
+	if extra score command option is true:
+		say "<moves>[line break][turn count][line break]</moves>";
 	if print state option is true:
 		try printing the entire state;
 
@@ -434,6 +452,16 @@ Carry out turning on the extra score command option:
 
 Understand "tw-extra-infos score" as turning on the extra score command option.
 
+The extra moves command option is a truth state that varies.
+The extra moves command option is usually false.
+
+Turning on the extra moves command option is an action applying to nothing.
+Carry out turning on the extra moves command option:
+	Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
+	Now the extra moves command option is true.
+
+Understand "tw-extra-infos moves" as turning on the extra moves command option.
+
 To trace the actions:
 	(- trace_actions = 1; -).
 
@@ -495,6 +523,7 @@ Understand "tw-print version" as reporting the version number.
 
 Reporting max score is an action applying to nothing.
 Carry out reporting max score:
+	Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
 	say "[maximum score]".
 
 Understand "tw-print max_score" as reporting max score.
@@ -504,10 +533,12 @@ To print id of (something - thing):
 
 Printing the id of player is an action applying to nothing.
 Carry out printing the id of player:
+	Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
 	print id of player.
 
 Printing the id of EndOfObject is an action applying to nothing.
 Carry out printing the id of EndOfObject:
+	Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
 	print id of EndOfObject.
 
 Understand "tw-print player id" as printing the id of player.

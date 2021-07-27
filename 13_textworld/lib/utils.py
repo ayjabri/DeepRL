@@ -9,9 +9,9 @@ from collections import namedtuple
 from textworld.text_utils import extract_vocab_from_gamefiles
 from textworld.gym.spaces.text_spaces import Word
 from textworld import EnvInfos
-from textworld.gym import register_game
+from textworld.gym import register_games
 import gym
-
+from numpy.random import choice
 
 State = namedtuple(
     'State', ['obs', 'admissible_commands'])
@@ -44,16 +44,18 @@ EXT_INFO = {'admissible_commands': True,
 class TextWrapper(gym.Wrapper):
     r"""Wrap TextWorld environment such that it returns consistant observations upon reset and step functions"""
 
-    def __init__(self, env, trainable_info: list = ["inventory"]):
+    def __init__(self, env, trainable_info: list = ["inventory"], use_intermediate_rewards=True):
         r"""
         Select from a list of extra attributres to include in training. These attributes should've been 
         requested as extra information when the environment was created.
         """
         super(TextWrapper, self).__init__(env=env)
         self.trainable_info = trainable_info
+        self.num_encoders = len(trainable_info) + 1
         self.admissible_commands = []
         self.last_command = []
         self.moves = 0
+        self.use_intermediate_rewards = use_intermediate_rewards
         self._init_obs()
         for att in trainable_info:
             self._verify_extra_info(att)
@@ -67,7 +69,6 @@ class TextWrapper(gym.Wrapper):
             value = getattr(self.env.request_infos, att)
             if isinstance(value, bool) and value:
                 self.extra_info.append(att)
-        self.Obs = namedtuple('obs', ['state']+[*self.extra_info])
 
     def encode(self, obs, info: dict):
         obs_ = [self.env.observation_space.tokenize(obs)]
@@ -79,51 +80,60 @@ class TextWrapper(gym.Wrapper):
                 extra_info[key] = value
         cmds_ = list(map(self.env.action_space.tokenize,
                      info["admissible_commands"]))
-        return State(obs_, cmds_)
-
-    # def _encode_cmd(self, commands:list)->list:
-    #     return list(map(self.env.action_space.tokenize, commands))
-
-    # def _encode_obs(self, string:[str,list])->list:
-    #     tokenized = []
-    #     if not isinstance(string,list):
-    #         string = [string]
-    #     for phrase in string:
-    #         if not isinstance(phrase,str): raise TypeError(f"Encoder cannot accpet {type(phrase)} type as input")
-    #         tokenized.append(self.env.observation_space.tokenize(phrase))
-    #     return tokenized
+        return {"obs":obs_,"admissible_commands":cmds_}, {}
 
     def reset(self):
         self.moves = 0
+        self.admissible_commands = []
+        self.last_command = []
         obs, self.last_extra_info = self.env.reset()
+        self.last_state = obs
         self.admissible_commands = self.last_extra_info['admissible_commands']
-        return self.encode(obs, self.last_extra_info)
+        return self.encode(obs, self.last_extra_info)[0]
 
     def step(self, action):
         self.moves += 1
         assert action in range(len(self.admissible_commands))
         self.last_command = self.admissible_commands[action]
-        _obs, reward, done, _info = self.env.step(self.last_command)
-        self.state = self.Obs(_obs, **_info)
-        if 'intermediate_reward' in self.extra_info:
-            reward += self._info['intermediate_reward']
-        self.admissible_commands = _info['admissible_commands']
-        return self.state, reward, done, {}
+        _obs, reward, done, self.last_extra_info = self.env.step(self.last_command)
+        self.last_state = _obs
+        if self.use_intermediate_rewards:
+            reward += self.last_extra_info['intermediate_reward']
+        self.admissible_commands = self.last_extra_info['admissible_commands']
+        state, extra_info = self.encode(_obs, self.last_extra_info)
+        return state, reward, done, extra_info
+    
+    def sample_action(self):
+        return choice(range(len(self.admissible_commands)))
 
 
 def make_game(files: list, extra_info: dict, max_action=8, max_obs=200, max_steps=50):
     vocab = extract_vocab_from_gamefiles(files)
     action_space = Word(max_length=max_action, vocab=vocab)
     observation_space = Word(max_length=max_obs, vocab=vocab)
-    env_id = register_game(files, request_infos=EnvInfos(**extra_info), action_space=action_space,
+    env_id = register_games(files, request_infos=EnvInfos(**extra_info), action_space=action_space,
                            observation_space=observation_space, max_episode_steps=max_steps)
     return gym.make(env_id)
 
 
-filename = 'tw_games/treasure.ulx'
+filename = ['tw_games/treasure.ulx']
 env = make_game(filename, EXT_INFO)
-print(env.reset())
-e = TextWrapper(env)
+
+env = TextWrapper(env, trainable_info=["inventory", "description"])
+
+
+
+def gen_batch(env, size=10):
+    batch = []
+    state = env.reset()
+    for _ in range(size):
+        batch.append(state)
+        action = env.sample_action()
+        state,r,done,_ = env.step(action)
+        if done:
+            state = env.reset()
+    return batch
+
 
 
 def play(env, agent):
